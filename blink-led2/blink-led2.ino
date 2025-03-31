@@ -4,6 +4,7 @@ String cmd;
 void setup() {
   Serial.begin(115200);
   Serial.println("Initializing...");
+
   pinMode(ledPin, OUTPUT);
 }
 
@@ -19,9 +20,9 @@ void loop() {
       Serial.println("LED Off");
     }
   } else {
-    // LED will toggle every 500ms if no command is received
     digitalWrite(ledPin, HIGH);
     delay(500);
+    
     digitalWrite(ledPin, LOW);
     delay(500);
   }
