@@ -14,7 +14,6 @@ float fallback_longitude = 121.0615;
 float latitude = 0.0;
 float longitude = 0.0;
 
-// Weather data variables
 String weatherDescription = "";
 float temperature = 0.0;
 float feelsLike = 0.0;
@@ -46,13 +45,7 @@ void setup() {
     } else {
       latitude = fallback_latitude;
       longitude = fallback_longitude;
-      Serial.println("Using fallback coordinates for Caloocan City");
-    }
-
-    // Get weather based on coordinates
-    if (getWeather()) {
-      // Get AI suggestion based on weather data
-      getAISuggestion();
+      Serial.println("Using fallback coordinates");
     }
   } else {
     Serial.println("\nFailed to connect to WiFi");
@@ -151,7 +144,6 @@ bool getWeather() {
   HTTPClient http;
   bool success = false;
 
-  // Request weather with the coordinates
   String url = "http://api.openweathermap.org/data/2.5/weather?lat=" + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&appid=" + weatherApiKey + "&units=metric&lang=en";
 
   Serial.println("Weather API URL: " + url);
@@ -223,7 +215,6 @@ void getAISuggestion() {
   
   HTTPClient http;
   
-  // Create the prompt for Gemini API
   String prompt = "Provide a short and helpful suggestion to inform residents about the current weather and keep them safe.\n\n";
   prompt += "- Weather Details:\n";
   prompt += "  - Weather: " + weatherDescription + "\n";
@@ -236,7 +227,7 @@ void getAISuggestion() {
   prompt += "- The message should be one sentence long and include a note that it's from PRAF Technology.\n";
   prompt += "- If the weather poses a flood risk, alert the residents.\n";
   prompt += "- If flooding is unlikely, suggest a safe way to deal with the weather while reassuring them.\n";
-  prompt += "- Maintain a formal tone, avoid AI-like phrasing, and do not use \"po\" or \"opo.\"\n";
+  prompt += "- Maintain a formal tone and avoid AI-like phrasing.\n";
   prompt += "- Do not use uncertain words like \"naman.\"\n";
   prompt += "- Structure:\n";
   prompt += "  1. Start with the flood update.\n";
@@ -244,7 +235,6 @@ void getAISuggestion() {
   prompt += "  3. End with a safety tip.\n";
   prompt += "- Do not include greetings-just start with the message.";
   
-  // Create the JSON payload for Gemini API
   StaticJsonDocument<2048> requestDoc;
   JsonArray contents = requestDoc.createNestedArray("contents");
   JsonObject content = contents.createNestedObject();
@@ -260,7 +250,6 @@ void getAISuggestion() {
   String requestBody;
   serializeJson(requestDoc, requestBody);
   
-  // Make the API request to Gemini
   String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + String(geminiApiKey);
   
   http.begin(geminiUrl);
@@ -285,8 +274,6 @@ void getAISuggestion() {
       Serial.println("\n==== AI WEATHER SUGGESTION ====");
       Serial.println(aiMessage);
       Serial.println("===============================\n");
-      
-      // Here you can send this message to a display, SMS service, or other output
     } else {
       Serial.println("Error parsing Gemini API response");
     }
