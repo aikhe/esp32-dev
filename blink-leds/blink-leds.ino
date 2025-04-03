@@ -2,16 +2,14 @@ int LED_ONE = 21;
 int LED_TWO = 22;
 int LED_THREE = 23;
 
-// Define button pin
 int buttonPin = 3;
 int buttonState = 0;
-int lastButtonState = HIGH;  // Variable to track the previous button state
-bool isRunning = false;  // Variable to track LED state
+int lastButtonState = HIGH;
+bool isRunning = false;
 
-// LED timing variables
 unsigned long previousMillis = 0;
-unsigned long interval = 300;  // 300ms interval for LEDs
-int currentLED = 0;  // Keep track of which LED to turn on
+unsigned long interval = 300;
+int currentLED = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -19,23 +17,25 @@ void setup() {
   pinMode(LED_ONE, OUTPUT);
   pinMode(LED_TWO, OUTPUT);
   pinMode(LED_THREE, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLUP);  // Enable pull-up resistor
+  pinMode(buttonPin, INPUT_PULLUP);
 }
 
 void loop() {
   int reading = digitalRead(buttonPin);
 
-  // If the button state has changed (pressed or released)
+  // toggle leds (pressed or released)
   if (reading != lastButtonState) {
-    previousMillis = millis();  // Reset debounce timer
+    previousMillis = millis();  // Reset debounce timer (only need once to toggle running state and set the value by currentMillis)
   }
 
-  if ((millis() - previousMillis) > 50) {  // Debounce time (50ms)
+  if ((millis() - previousMillis) > 50) {  // Debounce time (50ms) for consistent toggling, always run once button was clicked
     if (reading != buttonState) {
       buttonState = reading;
+      Serial.print("buttonState: ");
+      Serial.println(buttonState);
 
-      // Only toggle the state if the button is pressed
-      if (buttonState == LOW) {  // Button is pressed
+      // Only toggle leds state if the button is pressed (0/LOW)
+      if (buttonState == LOW) {
         isRunning = !isRunning;
         Serial.print("isRunning: ");
         Serial.println(isRunning);
@@ -43,17 +43,14 @@ void loop() {
     }
   }
 
-  lastButtonState = reading;  // Save the current button state for the next loop
+  lastButtonState = reading;  // Reset button state to 1/HIGH
 
-  // If isRunning is true, run the LED wave pattern
   if (isRunning) {
-    unsigned long currentMillis = millis();  // Get the current time
+    unsigned long currentMillis = millis();
 
-    // Check if it's time to switch to the next LED
     if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;  // Save the last time an LED was toggled
+      previousMillis = currentMillis; // update previousMills state
 
-      // Turn off the current LED
       if (currentLED == 0) {
         digitalWrite(LED_ONE, HIGH);
         digitalWrite(LED_TWO, LOW);
@@ -68,11 +65,9 @@ void loop() {
         digitalWrite(LED_THREE, HIGH);
       }
 
-      // Move to the next LED
-      currentLED = (currentLED + 1) % 3;  // Loop between 0, 1, 2
+      currentLED = (currentLED + 1) % 3;  // Loop between 0, 1, 2 (gets the median)
     }
   } else {
-    // Turn off all LEDs if isRunning is false
     digitalWrite(LED_ONE, LOW);
     digitalWrite(LED_TWO, LOW);
     digitalWrite(LED_THREE, LOW);
