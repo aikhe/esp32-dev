@@ -1,36 +1,17 @@
-/*
-  Blink
-
-  Turns an LED on for one second, then off for one second, repeatedly.
-
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6.  is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
-
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
-
-  This example code is in the public domain.
-
-  https://www.arduino.cc/en/Tutorial/BuiltInExamples/Blink
-*/
-
-// Define LED pins
-int LED_ONE = 1;
+int LED_ONE = 21;
 int LED_TWO = 22;
 int LED_THREE = 23;
 
 // Define button pin
 int buttonPin = 3;
 int buttonState = 0;
+int lastButtonState = HIGH;  // Variable to track the previous button state
 bool isRunning = false;  // Variable to track LED state
+
+// LED timing variables
+unsigned long previousMillis = 0;
+unsigned long interval = 300;  // 300ms interval for LEDs
+int currentLED = 0;  // Keep track of which LED to turn on
 
 void setup() {
   Serial.begin(115200);
@@ -38,33 +19,62 @@ void setup() {
   pinMode(LED_ONE, OUTPUT);
   pinMode(LED_TWO, OUTPUT);
   pinMode(LED_THREE, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLDOWN);  // Enable pull-down resistor
+  pinMode(buttonPin, INPUT_PULLUP);  // Enable pull-up resistor
 }
 
 void loop() {
-  Serial.print("Button State: ");
-  Serial.println(buttonState);
-  Serial.print(isRunning);
+  int reading = digitalRead(buttonPin);
 
-  // Read button state
-  if (digitalRead(buttonPin) == HIGH) {
-    delay(200);              // Simple debounce
-    isRunning = !isRunning;  // Toggle state
-    while (digitalRead(buttonPin) == HIGH);  // Wait for button release
+  // If the button state has changed (pressed or released)
+  if (reading != lastButtonState) {
+    previousMillis = millis();  // Reset debounce timer
   }
 
-  // Run LED wave if isRunning is true
+  if ((millis() - previousMillis) > 50) {  // Debounce time (50ms)
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      // Only toggle the state if the button is pressed
+      if (buttonState == LOW) {  // Button is pressed
+        isRunning = !isRunning;
+        Serial.print("isRunning: ");
+        Serial.println(isRunning);
+      }
+    }
+  }
+
+  lastButtonState = reading;  // Save the current button state for the next loop
+
+  // If isRunning is true, run the LED wave pattern
   if (isRunning) {
-    digitalWrite(LED_ONE, HIGH);
-    delay(300);
+    unsigned long currentMillis = millis();  // Get the current time
+
+    // Check if it's time to switch to the next LED
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;  // Save the last time an LED was toggled
+
+      // Turn off the current LED
+      if (currentLED == 0) {
+        digitalWrite(LED_ONE, HIGH);
+        digitalWrite(LED_TWO, LOW);
+        digitalWrite(LED_THREE, LOW);
+      } else if (currentLED == 1) {
+        digitalWrite(LED_ONE, LOW);
+        digitalWrite(LED_TWO, HIGH);
+        digitalWrite(LED_THREE, LOW);
+      } else if (currentLED == 2) {
+        digitalWrite(LED_ONE, LOW);
+        digitalWrite(LED_TWO, LOW);
+        digitalWrite(LED_THREE, HIGH);
+      }
+
+      // Move to the next LED
+      currentLED = (currentLED + 1) % 3;  // Loop between 0, 1, 2
+    }
+  } else {
+    // Turn off all LEDs if isRunning is false
     digitalWrite(LED_ONE, LOW);
-
-    digitalWrite(LED_TWO, HIGH);
-    delay(300);
     digitalWrite(LED_TWO, LOW);
-
-    digitalWrite(LED_THREE, HIGH);
-    delay(300);
     digitalWrite(LED_THREE, LOW);
   }
 }
