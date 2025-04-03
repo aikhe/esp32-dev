@@ -24,31 +24,41 @@
 
 // Define LED pins
 int LED_ONE = 3;
-int LED_TWO = 1;
-int LED_THREE = 22;
+int LED_TWO = 36;
+int LED_THREE = 39;
+
+// Define button pin
+int buttonPin = 21;
+bool isRunning = false;  // Variable to track LED state
 
 void setup() {
-  // Set LEDs as outputs
   pinMode(LED_ONE, OUTPUT);
   pinMode(LED_TWO, OUTPUT);
   pinMode(LED_THREE, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLDOWN); // Enable pull-down resistor
 }
 
 void loop() {
-  // First LED ON
-  digitalWrite(LED_ONE, HIGH);
-  delay(200);
-  
-  // Second LED ON, First LED OFF
-  digitalWrite(LED_ONE, LOW);
-  digitalWrite(LED_TWO, HIGH);
-  delay(200);
+  // Read button state
+  if (digitalRead(buttonPin) == HIGH) {
+    delay(200);  // Simple debounce
+    isRunning = !isRunning;  // Toggle state
+    while (digitalRead(buttonPin) == HIGH);  // Wait for button release
+  }
 
-  // Third LED ON, Second LED OFF
-  digitalWrite(LED_TWO, LOW);
-  digitalWrite(LED_THREE, HIGH);
-  delay(200);
+  // Run LED wave if isRunning is true
+  if (isRunning) {
+    digitalWrite(LED_ONE, HIGH);
+    delay(300);
+    digitalWrite(LED_ONE, LOW);
+    
+    digitalWrite(LED_TWO, HIGH);
+    delay(300);
+    digitalWrite(LED_TWO, LOW);
 
-  // Third LED OFF to restart the cycle
-  digitalWrite(LED_THREE, LOW);
+    digitalWrite(LED_THREE, HIGH);
+    delay(300);
+    digitalWrite(LED_THREE, LOW);
+  }
 }
+
