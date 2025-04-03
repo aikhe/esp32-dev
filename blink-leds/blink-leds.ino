@@ -23,25 +23,32 @@
 */
 
 // Define LED pins
-int LED_ONE = 3;
-int LED_TWO = 36;
-int LED_THREE = 39;
+int LED_ONE = 1;
+int LED_TWO = 22;
+int LED_THREE = 23;
 
 // Define button pin
-int buttonPin = 21;
+int buttonPin = 3;
+int buttonState = 0;
 bool isRunning = false;  // Variable to track LED state
 
 void setup() {
+  Serial.begin(115200);
+
   pinMode(LED_ONE, OUTPUT);
   pinMode(LED_TWO, OUTPUT);
   pinMode(LED_THREE, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLDOWN); // Enable pull-down resistor
+  pinMode(buttonPin, INPUT_PULLDOWN);  // Enable pull-down resistor
 }
 
 void loop() {
+  Serial.print("Button State: ");
+  Serial.println(buttonState);
+  Serial.print(isRunning);
+
   // Read button state
   if (digitalRead(buttonPin) == HIGH) {
-    delay(200);  // Simple debounce
+    delay(200);              // Simple debounce
     isRunning = !isRunning;  // Toggle state
     while (digitalRead(buttonPin) == HIGH);  // Wait for button release
   }
@@ -51,7 +58,7 @@ void loop() {
     digitalWrite(LED_ONE, HIGH);
     delay(300);
     digitalWrite(LED_ONE, LOW);
-    
+
     digitalWrite(LED_TWO, HIGH);
     delay(300);
     digitalWrite(LED_TWO, LOW);
@@ -61,4 +68,3 @@ void loop() {
     digitalWrite(LED_THREE, LOW);
   }
 }
-
