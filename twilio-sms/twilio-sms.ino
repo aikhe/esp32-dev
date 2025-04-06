@@ -1,22 +1,18 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-// WiFi credentials
 const char* ssid = "TK-gacura";
 const char* password = "gisaniel924";
 
-// Twilio credentials
-const char* accountSid = "YOUR_TWILIO_SID_HERE";
-const char* authToken = "YOUR_AUTH_TOKEN_HERE";
+const char* accountSid = "";
+const char* authToken = "";
 
 const char* fromNumber = "+13023054782";
 const char* toNumber = "+639649687066";
 const char* messageBody = "Text I want to send";
 
-// Secure WiFi client
 WiFiClientSecure client;
 
-// Basic Base64 encoding
 String base64Encode(String input) {
   const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   String encoded = "";
