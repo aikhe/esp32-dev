@@ -1,16 +1,6 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-const char* ssid = "TK-gacura";
-const char* password = "gisaniel924";
-
-const char* accountSid = "";
-const char* authToken = "";
-
-const char* fromNumber = "+13023054782";
-const char* toNumber = "+639649687066";
-const char* messageBody = "Text I want to send";
-
 WiFiClientSecure client;
 
 String base64Encode(String input) {
