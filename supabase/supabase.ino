@@ -1,5 +1,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 #define SSID              "TK-gacura"
 #define PASSWORD          "gisaniel924"
@@ -20,7 +22,7 @@ void setup() {
   }
   Serial.println("\nConnected to WiFi\n");
 
-  getNumbers()
+  getNumbers();
 }
 
 void loop() {
