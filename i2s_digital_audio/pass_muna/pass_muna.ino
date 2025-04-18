@@ -25,36 +25,41 @@ const uint8_t numSentences = sizeof(floodSentences) / sizeof(floodSentences[0]);
 void setup() {
   Serial.begin(115200);
 
-  // WiFi
+  // connect WiFi
   WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  Serial.print("Connecting");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("\nWiFi connected!");
 
-  // I2S
+  // setup I2S + volume
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(100);
 
-  // Play the flood warning once
+  // kick it off immediately
   playFloodWarning();
 }
 
 void loop() {
-  // nothing here unless you want to re-trigger
+  // stream audio
+  audio.loop();
+
+  // as soon as everything’s done, play again
+  if (!audio.isRunning()) {
+    delay(300);               // tiny pause so Google doesn’t get hammered
+    playFloodWarning();
+  }
 }
 
-// Helper to speak all sentences in order
 void playFloodWarning() {
   for (uint8_t i = 0; i < numSentences; i++) {
     audio.connecttospeech(floodSentences[i], "tl");
     while (audio.isRunning()) {
       audio.loop();
     }
-    delay(100);
+    delay(0);  // gap between sentences
   }
 }
