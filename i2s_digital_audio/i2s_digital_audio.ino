@@ -11,9 +11,9 @@
 #define SPI_SCK       18
 
 // I2S Pin definitions
-#define I2S_DOUT      22
-#define I2S_BCLK      26
-#define I2S_LRC       25
+#define I2S_DOUT      25
+#define I2S_BCLK      27
+#define I2S_LRC       26
 
 // Initialize I2S
 void initI2S() {

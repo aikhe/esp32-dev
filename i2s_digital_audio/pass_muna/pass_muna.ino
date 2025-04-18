@@ -1,48 +1,60 @@
-#include <driver/i2s.h>
-#include <math.h>
+#include "Arduino.h"
+#include "WiFi.h"
+#include "Audio.h"
 
-#define I2S_DOUT 25  // DIN of MAX98357A
-#define I2S_BCLK 27
-#define I2S_LRC 26
+// I2S pins
+#define I2S_DOUT  25
+#define I2S_BCLK  27
+#define I2S_LRC   26
+
+Audio audio;
+
+// WiFi creds
+const char* ssid     = "TK-gacura";
+const char* password = "gisaniel924";
+
+// Sentences to speak
+const char* floodSentences[] = {
+  "Paalala sa lahat ng residente: May matinding banta ng pagbaha sa inyong lugar.",
+  "Lumikas agad patungo sa mas mataas na lugar.",
+  "Dalhin ang mahahalagang gamit at manatiling kalmado.",
+  "Makinig sa mga anunsyo ng lokal na pamahalaan para sa karagdagang impormasyon."
+};
+const uint8_t numSentences = sizeof(floodSentences) / sizeof(floodSentences[0]);
 
 void setup() {
   Serial.begin(115200);
 
-  i2s_config_t config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-    .sample_rate = 44100,
-    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-    .communication_format = I2S_COMM_FORMAT_I2S_MSB,
-    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    .dma_buf_count = 8,
-    .dma_buf_len = 64,
-    .use_apll = false,
-    .tx_desc_auto_clear = true,
-    .fixed_mclk = 0
-  };
+  // WiFi
+  WiFi.disconnect();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected!");
 
-  i2s_pin_config_t pin_config = {
-    .bck_io_num = I2S_BCLK,
-    .ws_io_num = I2S_LRC,
-    .data_out_num = I2S_DOUT,
-    .data_in_num = I2S_PIN_NO_CHANGE
-  };
+  // I2S
+  audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+  audio.setVolume(100);
 
-  i2s_driver_install(I2S_NUM_0, &config, 0, NULL);
-  i2s_set_pin(I2S_NUM_0, &pin_config);
+  // Play the flood warning once
+  playFloodWarning();
 }
 
 void loop() {
-  int16_t buffer[256 * 2];  // Stereo
-  float freq = 440.0;
-  for (int i = 0; i < 256; i++) {
-    float sample = sinf(2 * M_PI * freq * i / 44100.0);
-    int16_t value = sample * 32767;
-    buffer[i * 2] = value;
-    buffer[i * 2 + 1] = value;
-  }
+  // nothing here unless you want to re-trigger
+}
 
-  size_t bytes_written;
-  i2s_write(I2S_NUM_0, buffer, sizeof(buffer), &bytes_written, portMAX_DELAY);
+// Helper to speak all sentences in order
+void playFloodWarning() {
+  for (uint8_t i = 0; i < numSentences; i++) {
+    audio.connecttospeech(floodSentences[i], "tl");
+    while (audio.isRunning()) {
+      audio.loop();
+    }
+    delay(100);
+  }
 }
