@@ -2,64 +2,105 @@
 #include "WiFi.h"
 #include "Audio.h"
 
-// I2S pins
 #define I2S_DOUT  25
 #define I2S_BCLK  27
 #define I2S_LRC   26
 
+#define TTS_GOOGLE_LANGUAGE "en"     // Use "tl" for Tagalog
+
 Audio audio;
 
-// WiFi creds
 const char* ssid     = "TK-gacura";
 const char* password = "gisaniel924";
 
-// Sentences to speak
-const char* floodSentences[] = {
-  "Paalala sa lahat ng residente: May matinding banta ng pagbaha sa inyong lugar.",
-  "Lumikas agad patungo sa mas mataas na lugar.",
-  "Dalhin ang mahahalagang gamit at manatiling kalmado.",
-  "Makinig sa mga anunsyo ng lokal na pamahalaan para sa karagdagang impormasyon."
-};
-const uint8_t numSentences = sizeof(floodSentences) / sizeof(floodSentences[0]);
+// ✅ Dynamic weather update message
+String floodMessage = 
+  "AISuggestion: PRAF Technology Weather Update: Caloocan City is not expected to flood today; "
+  "however, with scattered clouds, a temperature of 34.77°C but feeling like 41.77°C, and 58% humidity, "
+  "remember to stay hydrated and avoid prolonged exposure to the sun.";
+
+// 🔊 Speak in smart chunks
+void speakTextInChunks(String text, int maxLength) {
+  // Use a smaller chunk size
+  int chunkSize = 60; // Reduced from 100
+  
+  int start = 0;
+  while (start < text.length()) {
+    int end = start + chunkSize;
+    
+    // Ensure we don't split in the middle of a word
+    if (end < text.length()) {
+      // Prefer ending at punctuation
+      int punctEnd = end;
+      while (punctEnd > start && text[punctEnd] != '.' && text[punctEnd] != ',' && text[punctEnd] != ';' && text[punctEnd] != ':') {
+        punctEnd--;
+      }
+      
+      // If we found punctuation, use that as the end point
+      if (punctEnd > start && (text[punctEnd] == ',' || text[punctEnd] == ';' || text[punctEnd] == ':')) {
+        end = punctEnd + 1; // Include the punctuation
+      } else {
+        // Otherwise find a space
+        while (end > start && text[end] != ' ') {
+          end--;
+        }
+        if (end == start) {
+          end = start + chunkSize; // Worst case, just cut at max length
+        }
+      }
+    }
+    
+    String chunk = text.substring(start, end);
+    chunk.trim(); // Remove any leading/trailing spaces
+    
+    if (chunk.length() > 0) {
+      Serial.println("Playing chunk: '" + chunk + "'");
+      Serial.println("Start: " + String(start) + ", End: " + String(end));
+      
+      audio.connecttospeech(chunk.c_str(), TTS_GOOGLE_LANGUAGE);
+      while (audio.isRunning()) {
+        audio.loop();
+      }
+    }
+    
+    start = end;
+  }
+}
+
+void playFloodWarning() {
+  speakTextInChunks(floodMessage, 100); // Split into chunks of ~100 characters
+}
+
+// 🕒 Loop control
+unsigned long lastPlayTime = 0;
+const unsigned long playInterval = 60000UL;  // 1 minute
 
 void setup() {
   Serial.begin(115200);
 
-  // connect WiFi
   WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("\nWiFi connected!");
 
-  // setup I2S + volume
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(100);
 
-  // kick it off immediately
-  playFloodWarning();
+  playFloodWarning();             // 🔊 Play once at start
+  lastPlayTime = millis();
 }
 
 void loop() {
-  // stream audio
   audio.loop();
 
-  // as soon as everything’s done, play again
-  if (!audio.isRunning()) {
-    delay(300);               // tiny pause so Google doesn’t get hammered
+  // replay after interval
+  if (!audio.isRunning() && (millis() - lastPlayTime >= playInterval)) {
     playFloodWarning();
-  }
-}
-
-void playFloodWarning() {
-  for (uint8_t i = 0; i < numSentences; i++) {
-    audio.connecttospeech(floodSentences[i], "tl");
-    while (audio.isRunning()) {
-      audio.loop();
-    }
-    delay(0);  // gap between sentences
+    lastPlayTime = millis();
   }
 }

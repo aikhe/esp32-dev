@@ -55,13 +55,6 @@ void setup() {
 
   // Set Volume (0 to 21)
   audio.setVolume(100);
-
-  // Attempt to play MP3 file
-  if (!audio.connecttoFS(SD, "crow.mp3")) {
-    Serial.println("Failed to connect to /crow.mp3");
-  } else {
-    Serial.println("Playing /crow.mp3");
-  }
 }
 
 void loop() {
@@ -69,7 +62,7 @@ void loop() {
 
   // If playback has ended, restart the MP3
   if (!audio.isRunning()) {
-    Serial.println("Restarting /crow.mp3");
-    audio.connecttoFS(SD, "MEDIUM-FLOOD.mp3");
+    Serial.println("Restarting");
+    audio.connecttoFS(SD, "AI-NOTIF.mp3");
   }
 }
