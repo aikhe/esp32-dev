@@ -1,95 +1,75 @@
-#include "Arduino.h"
-#include "FS.h"
-#include "SD.h"
-#include "SPI.h"
-#include "driver/i2s.h"
+/*
+  ESP32 SD I2S Music Player
+  Plays MP3 file from microSD card
+  Uses MAX98357 I2S Amplifier Module
+  Uses ESP32-audioI2S Library - https://github.com/schreibfaul1/ESP32-audioI2S
+  
+  DroneBot Workshop 2022
+  https://dronebotworkshop.com
+*/
 
-// MicroSD Pin definitions
+// Include required libraries
+#include "Arduino.h"
+#include "Audio.h"
+#include "SD.h"
+#include "FS.h"
+#include "SPI.h"
+
+// microSD Card Reader connections
 #define SD_CS          5
-#define SPI_MOSI      23
+#define SPI_MOSI      23 
 #define SPI_MISO      19
 #define SPI_SCK       18
 
-// I2S Pin definitions
+// I2S Connections (MAX98357)
 #define I2S_DOUT      25
 #define I2S_BCLK      27
 #define I2S_LRC       26
 
-// Initialize I2S
-void initI2S() {
-    // Define the I2S configuration
-    i2s_config_t i2s_config = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),  // Correct usage of I2S_MODE
-        .sample_rate = 44100,                                  // 44.1kHz sample rate
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,           // 16-bit sample size
-        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,           // Stereo output
-        .communication_format = I2S_COMM_FORMAT_I2S_MSB,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,               // Interrupt level
-        .dma_buf_count = 8,                                     // DMA buffer count
-        .dma_buf_len = 1024                                    // DMA buffer length
-    };
-    
-    // Pin configuration for I2S
-    i2s_pin_config_t pin_config = {
-        .bck_io_num = I2S_BCLK,
-        .ws_io_num = I2S_LRC,
-        .data_out_num = I2S_DOUT,
-        .data_in_num = I2S_PIN_NO_CHANGE
-    };
-
-    // Initialize I2S driver
-    i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-    i2s_set_pin(I2S_NUM_0, &pin_config);
-}
+// Create Audio object
+Audio audio;
 
 void setup() {
-    // Initialize SD card
-    if (!SD.begin(SD_CS)) {
-        Serial.println("Error accessing SD card!");
-        while (true);
-    }
-    
-    // Initialize I2S
-    initI2S();
+  // Set microSD Card CS as OUTPUT and set HIGH
+  pinMode(SD_CS, OUTPUT);      
+  digitalWrite(SD_CS, HIGH); 
 
-    // Open MP3 file (note: we're not processing MP3 here, just a placeholder for I2S stream)
-    File audioFile = SD.open("/crow.mp3");
-    if (!audioFile) {
-        Serial.println("Failed to open MP3 file!");
-        while (true);
-    }
+  // Start Serial Port
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("ESP32 I2S Music Player Starting...");
 
-    // Now start reading audio data and sending it to I2S (this part depends on your audio file format)
-    // The logic to decode MP3 to PCM needs to be handled here
-    // For simplicity, let's assume it's already PCM data in the file
-    while (audioFile.available()) {
-        uint8_t data[1024]; // Adjust based on buffer size
-        int bytesRead = audioFile.read(data, sizeof(data));
-        i2s_write(I2S_NUM_0, data, bytesRead, NULL, portMAX_DELAY);  // Use i2s_write instead of i2s_write_bytes
-    }
-    
-    // Close the file when done playing
-    audioFile.close();
-    
-    // Reset file pointer to start for looping
-    audioFile = SD.open("/crow.mp3");
+  // Initialize SPI bus for microSD Card
+  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+
+  // Initialize microSD card with custom SPI
+  if (!SD.begin(SD_CS, SPI)) {
+    Serial.println("Error accessing microSD card!");
+    while (true); 
+  }
+
+  Serial.println("microSD card initialized.");
+
+  // Setup I2S 
+  audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+
+  // Set Volume (0 to 21)
+  audio.setVolume(100);
+
+  // Attempt to play MP3 file
+  if (!audio.connecttoFS(SD, "crow.mp3")) {
+    Serial.println("Failed to connect to /crow.mp3");
+  } else {
+    Serial.println("Playing /crow.mp3");
+  }
 }
 
 void loop() {
-    // Loop the audio
-    File audioFile = SD.open("/crow.mp3");
-    if (!audioFile) {
-        Serial.println("Failed to open MP3 file!");
-        while (true);
-    }
+  audio.loop();
 
-    // Play the audio in a loop
-    while (audioFile.available()) {
-        uint8_t data[1024]; // Adjust based on buffer size
-        int bytesRead = audioFile.read(data, sizeof(data));
-        i2s_write(I2S_NUM_0, data, bytesRead, NULL, portMAX_DELAY);  // Write data to I2S for playback
-    }
-
-    // When the file reaches the end, reset the file pointer
-    audioFile.seek(0); // Reset the file pointer to loop the audio
+  // If playback has ended, restart the MP3
+  if (!audio.isRunning()) {
+    Serial.println("Restarting /crow.mp3");
+    audio.connecttoFS(SD, "MEDIUM-FLOOD.mp3");
+  }
 }
