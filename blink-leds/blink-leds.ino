@@ -1,8 +1,8 @@
-int LED_ONE = 21;
-int LED_TWO = 22;
-int LED_THREE = 23;
+int LED_ONE = 2;
+int LED_TWO = 15;
+int LED_THREE = 21;
 
-int buttonPin = 3;
+int buttonPin = 4;
 int buttonState = 0;
 int lastButtonState = HIGH;
 

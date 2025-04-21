@@ -9,7 +9,7 @@ const char* authToken = "";
 
 const char* fromNumber = "+13023054782";
 const char* toNumber = "+639649687066";
-const char* messageBody = "Text I want to send";
+const char* messageBody = "Text I want to send, damn plss give me some space";
 
 WiFiClientSecure client;
 
