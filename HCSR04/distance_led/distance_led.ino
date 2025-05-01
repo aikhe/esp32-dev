@@ -1,9 +1,9 @@
-#define TRIG_PIN 18
-#define ECHO_PIN 19
+#define TRIG_PIN 17
+#define ECHO_PIN 16
 
-#define LED_ONE 17
-#define LED_TWO 16
-#define LED_THREE 4
+#define LED_ONE 13
+#define LED_TWO 12
+#define LED_THREE 14
 
 void setup() {
   Serial.begin(115200);
@@ -50,5 +50,5 @@ void loop() {
     digitalWrite(LED_THREE, LOW);
   }
   
-  delay(1000);
+  // delay(1000);
 }

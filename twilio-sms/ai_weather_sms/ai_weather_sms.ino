@@ -9,6 +9,7 @@
 
 const char *ssid = "TK-gacura";
 const char *password = "gisaniel924";
+
 const char *weatherApiKey = "7970309436bc52d518c7e71e314b8053";
 const char *geminiApiKey = "AIzaSyD_g_WAsPqPKxltdOJt8VZw4uu359D3XXA";
 

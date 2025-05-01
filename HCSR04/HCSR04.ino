@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-#define TRIG_PIN 12
-#define ECHO_PIN 13
+#define TRIG_PIN 17
+#define ECHO_PIN 16
 
 long duration;
 
