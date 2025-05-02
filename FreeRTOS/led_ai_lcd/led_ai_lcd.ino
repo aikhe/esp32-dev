@@ -133,30 +133,36 @@ void aiButtonTask(void *parameter) {
 
 void scrollLCDTask(void *parameter) {
   String msg = ">> PRAF Tech Alert System";
-  String paddedMsg = msg + "   ";  // 5 spaces on the right only
-  paddedMsg = paddedMsg + paddedMsg.substring(0, 16);  // Wrap for smooth scroll
+  String paddedMsg = msg + "    ";  // Added more padding for smoother transition
+
+  // Create a circular buffer by adding end portion to the start
+  paddedMsg = paddedMsg.substring(paddedMsg.length() - 16) + paddedMsg;
 
   int len = paddedMsg.length();
-  int pos = (len - 16);  // Start from the end
-  const int interval = 50;
+  int pos = len - 16;  // Start from the end
+  const int interval = 30;  // Scroll speed
   unsigned long lastUpdate = 0;
 
   while (true) {
-    if (millis() - lastUpdate >= interval) {
+    unsigned long currentTime = millis();
+    if (currentTime - lastUpdate >= interval) {
+      // Move left-to-right by decreasing the position
+      pos = (pos - 1 + (len - 16)) % (len - 16);
+      
+      // Extract current window
       String scrollSegment = paddedMsg.substring(pos, pos + 16);
-
+      
+      // Display on both rows
       lcd.setCursor(0, 0);
       lcd.print(scrollSegment);
 
       lcd.setCursor(0, 1);
       lcd.print(scrollSegment);
 
-      // Move backward (left to right visually)
-      pos = (pos - 1 + (len - 16)) % (len - 16);
-
-      lastUpdate = millis();
+      lastUpdate = currentTime;
     }
-    vTaskDelay(1);
+
+    vTaskDelay(1);  // Yield for multitasking
   }
 }
 
@@ -172,7 +178,9 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
-  lcd.print("System Booting...");
+  lcd.print("PRAF Flood");
+  lcd.setCursor(0, 1);
+  lcd.print("Alert System");
 
   // Wi-Fi
   WiFi.begin(ssid, password);
@@ -182,10 +190,6 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("\nWiFi Connected");
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("PRAF System Ready");
 
   // Tasks
   xTaskCreatePinnedToCore(waveLEDTask, "LED Wave", 2048, NULL, 1, NULL, 1);
