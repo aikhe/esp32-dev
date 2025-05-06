@@ -3,7 +3,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <LiquidCrystal_I2C.h>
-#include "Audio.h"
+#include <Audio.h>
 #include <vector>
 #include <WiFiClientSecure.h> // For HTTPS
 
@@ -53,6 +53,9 @@ TaskHandle_t buttonTaskHandle = NULL;
 
 // Create Audio object
 Audio audio;
+
+// LCD I2C init (16x2)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // ---------- Helper Functions ----------
 void reconnectWiFi() {
@@ -430,6 +433,7 @@ void setup() {
   audio.setVolume(21);  // 0...21
 
   // Create FreeRTOS tasks
+  xTaskCreatePinnedToCore(scrollLCDTask, "LCD Scroll", 2048, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(aiButtonTask, "AI Button", 8192, NULL, 1, NULL, 1);
   xTaskCreate(
     smsButtonTask,     // Task function
@@ -439,7 +443,7 @@ void setup() {
     1,                 // Priority (1 is low, configMAX_PRIORITIES-1 is high)
     &buttonTaskHandle  // Task handle
   );
-  xTaskCreatePinnedToCore(scrollLCDTask, "LCD Scroll", 2048, NULL, 1, NULL, 1);
+
 
   Serial.println("System ready! Press the button to fetch numbers from Supabase.");
 }
