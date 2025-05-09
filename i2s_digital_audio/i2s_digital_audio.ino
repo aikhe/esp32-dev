@@ -63,6 +63,6 @@ void loop() {
   // If playback has ended, restart the MP3
   if (!audio.isRunning()) {
     Serial.println("Restarting");
-    audio.connecttoFS(SD, "AI-NOTIF.mp3");
+    audio.connecttoFS(SD, "DEVICE-START-VOICE.mp3");
   }
 }
