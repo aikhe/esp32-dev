@@ -15,9 +15,6 @@
 #include "FS.h"
 #include "SPI.h"
 
-const char *ssid = "TK-gacura";
-const char *password = "gisaniel924";
-
 // HC-SR04 Sensor pins
 #define TRIG_PIN 17
 #define ECHO_PIN 16
@@ -204,6 +201,18 @@ void controlOutputsTask(void *parameter) {
       lastStateUpdateTime = currentTime; // Update debounce timer
       
       if (currentRange > 0) {
+        // Water level detected
+        activeState = currentRange;
+        stateLastChangeTime = currentTime; // Reset 10-minute timer
+        
+        // Update LEDs based on new range
+        digitalWrite(LED_ONE, currentRange == 1 ? HIGH : LOW);
+        digitalWrite(LED_TWO, currentRange == 2 ? HIGH : LOW);
+        digitalWrite(LED_THREE, currentRange == 3 ? HIGH : LOW);
+        
+        // Play the appropriate alert sound based on water level - with safety checks
+        if (SD.exists("/LOW-FLOOD-HIGH.mp3") && SD.exists("/MEDIUM-FLOOD-HIGH2.mp3") && SD.exists("/HIGH-FLOOD-HIGH2.mp3")) {
+          switch (currentRange) {
             case 1:  // Alert (far)
               Serial.println("Playing alert sound");
               if (!audio.isRunning()) {  // Only start a new file if not already playing
@@ -343,22 +352,6 @@ void setup() {
   // Initialize Serial communication
   Serial.begin(115200);
   delay(100); // Short delay for serial stability
-
-  Serial.print("Connecting to WiFi: ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-
-  int timeout = 0;
-  while (WiFi.status() != WL_CONNECTED && timeout < 20) {
-    delay(1000);
-    Serial.print(".");
-    timeout++;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nConnected to WiFi");
-    Serial.print("IP Address: ");
-  }
   
   Serial.println("\n\n--- Starting Water Monitor System ---");
   
@@ -366,16 +359,19 @@ void setup() {
   Wire.begin();
   delay(50); // Short delay for I2C stability
   
-  // Initialize LCD - using the proper initialization sequence
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Water Monitor");
-  lcd.setCursor(0, 1);
-  lcd.print("Starting...");
+  if (!lcd.begin(16, 2, LCD_5x8DOTS)) {
+    Serial.println("LCD initialization failed!");
+  } else {
+    lcd.init();
+    lcd.backlight();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Water Monitor");
+    lcd.setCursor(0, 1);
+    lcd.print("Starting...");
+  }
   delay(1000);
-  
+ 
   // Configure HC-SR04 pins
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
@@ -418,11 +414,6 @@ void setup() {
                         SD.exists("/LOW-FLOOD-HIGH.mp3") && 
                         SD.exists("/MEDIUM-FLOOD-HIGH2.mp3") && 
                         SD.exists("/HIGH-FLOOD-HIGH2.mp3");
-
-      /DEVICE-START-VOICE.mp3
-      /LOW-FLOOD-HIGH.mp3
-      /MEDIUM-FLOOD-HIGH2.mp3
-      /HIGH-FLOOD-HIGH2.mp3
       
       if (filesExist) {
         // Set up I2S for audio output
@@ -459,8 +450,6 @@ void setup() {
   if (!sdInitialized) {
     Serial.println("SD card initialization failed after retries. Continuing without audio.");
   }
-
-  // CHECKPOINT
  
   // Create FreeRTOS tasks with increased stack sizes
   xTaskCreate(
