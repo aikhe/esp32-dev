@@ -1,26 +1,40 @@
-#include <AudioFileSourceSD.h>
-#include <AudioGeneratorMP3.h>
-#include <AudioOutputI2S.h>
-#include <SPI.h>
-#include <SD.h>
+#include "AudioTools.h"
+#include "AudioTools/AudioCodecs/CodecMP3Helix.h"
 
-#define SD_CS    5
+// Replace with your WiFi credentials
+const char* ssid = "TK-gacura";
+const char* password = "gisaniel924";
 
-SPIClass spiSD(VSPI);
-AudioFileSourceSD source("/DEVICE-START-VOICE.mp3");
-AudioGeneratorMP3 mp3;
-AudioOutputI2S out;
+// I2S pin configuration
+#define I2S_DOUT 25
+#define I2S_BCLK 27
+#define I2S_LRC  26
 
-void setup(){
+// Create instances for streaming
+URLStream urlStream(ssid, password);
+I2SStream i2sStream;
+EncodedAudioStream decoder(&i2sStream, new MP3DecoderHelix());
+StreamCopy streamCopier(decoder, urlStream);
+
+void setup() {
   Serial.begin(115200);
-  spiSD.begin(18, 19, 23, SD_CS);
-  SD.begin(SD_CS, spiSD);
+  AudioToolsLogger.begin(Serial, AudioToolsLogLevel::Info);
 
-  out.begin();                 // uses GPIO 26,25,22 by default
-  source.begin();
-  mp3.begin(&source, &out);
+  // Configure I2S with specified pins
+  auto i2sConfig = i2sStream.defaultConfig(TX_MODE);
+  i2sConfig.pin_bck = I2S_BCLK;
+  i2sConfig.pin_ws = I2S_LRC;
+  i2sConfig.pin_data = I2S_DOUT;
+  i2sStream.begin(i2sConfig);
+
+  // Initialize the decoder
+  decoder.begin();
+
+  // Start streaming from the URL
+  urlStream.begin("http://stream.srg-ssr.ch/m/rsj/mp3_128", "audio/mp3");
 }
 
-void loop(){
-  if(mp3.isRunning()) mp3.loop();
+void loop() {
+  // Continuously copy data from the URL stream to the decoder
+  streamCopier.copy();
 }
