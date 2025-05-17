@@ -48,6 +48,8 @@ void setup() {
   i2sConfig.pin_data = I2S_DOUT;
   i2sConfig.buffer_size = 8192;  // Increase buffer size
   i2sConfig.buffer_count = 8;    // Increase buffer count
+  i2sConfig.channels        = 2;
+  i2sConfig.channel_format  = I2SChannelSelect::Stereo;
   i2sStream.begin(i2sConfig);
 
   // Initialize decoder
